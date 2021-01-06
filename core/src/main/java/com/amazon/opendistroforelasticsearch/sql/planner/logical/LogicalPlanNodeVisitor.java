@@ -47,6 +47,10 @@ public abstract class LogicalPlanNodeVisitor<R, C> {
     return visitNode(plan, context);
   }
 
+  public R visitPredict(LogicalPredict plan, C context) {
+    return visitNode(plan, context);
+  }
+
   public R visitRename(LogicalRename plan, C context) {
     return visitNode(plan, context);
   }

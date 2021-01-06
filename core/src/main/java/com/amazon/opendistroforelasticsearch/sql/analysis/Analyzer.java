@@ -37,6 +37,7 @@ import com.amazon.opendistroforelasticsearch.sql.ast.tree.Eval;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Filter;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Head;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Limit;
+import com.amazon.opendistroforelasticsearch.sql.ast.tree.Predict;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Project;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.RareTopN;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Relation;
@@ -62,6 +63,7 @@ import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalFilter;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalHead;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalLimit;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalPlan;
+import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalPredict;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalProject;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalRareTopN;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalRelation;
@@ -368,6 +370,15 @@ public class Analyzer extends AbstractNodeVisitor<LogicalPlan, AnalysisContext> 
     Integer number = (Integer) getOptionAsLiteral(options, 2).getValue();
 
     return new LogicalHead(child, keeplast, whileExpr, number);
+  }
+
+  public LogicalPlan visitPredict(Predict node, AnalysisContext context) {
+    LogicalPlan child = node.getChild().get(0).accept(this, context);
+    List<Argument> options = node.getOptions();
+    String algo = (String)(options.get(0).getValue().getValue());
+    String args = (String)(options.get(1).getValue().getValue());
+
+    return new LogicalPredict(child, algo, args);
   }
 
   private static Literal getOptionAsLiteral(List<UnresolvedArgument> options, int optionIdx) {

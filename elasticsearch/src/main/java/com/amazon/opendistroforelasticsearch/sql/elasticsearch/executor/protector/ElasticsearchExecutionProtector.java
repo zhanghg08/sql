@@ -17,6 +17,7 @@
 
 package com.amazon.opendistroforelasticsearch.sql.elasticsearch.executor.protector;
 
+import com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.planner.PredictOperator;
 import com.amazon.opendistroforelasticsearch.sql.monitor.ResourceMonitor;
 import com.amazon.opendistroforelasticsearch.sql.planner.physical.AggregationOperator;
 import com.amazon.opendistroforelasticsearch.sql.planner.physical.DedupeOperator;
@@ -111,6 +112,15 @@ public class ElasticsearchExecutionProtector extends ExecutionProtector {
     );
   }
 
+  @Override
+  public PhysicalPlan visitPredict(PhysicalPlan node, Object context) {
+    PredictOperator predictOperatorNode = (PredictOperator)node;
+    return new PredictOperator(visitInput(predictOperatorNode.getInput(), context),
+            predictOperatorNode.getAlgo(),
+            predictOperatorNode.getArgs(),
+            predictOperatorNode.getElasticsearchClient()
+            );
+  }
   @Override
   public PhysicalPlan visitWindow(WindowOperator node, Object context) {
     return new WindowOperator(

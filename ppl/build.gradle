@@ -65,7 +65,7 @@ jacocoTestReport {
         }))
     }
 }
-test.finalizedBy(project.tasks.jacocoTestReport)
+
 jacocoTestCoverageVerification {
     violationRules {
         rule {
@@ -82,4 +82,3 @@ jacocoTestCoverageVerification {
         }))
     }
 }
-check.dependsOn jacocoTestCoverageVerification

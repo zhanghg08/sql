@@ -17,6 +17,9 @@
 package com.amazon.opendistroforelasticsearch.sql.elasticsearch.client;
 
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.mapping.IndexMapping;
+import com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.actions.MLPredictionTaskAction;
+import com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.actions.MLPredictionTaskRequest;
+import com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.actions.MLPredictionTaskResponse;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.request.ElasticsearchRequest;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.response.ElasticsearchResponse;
 import com.carrotsearch.hppc.cursors.ObjectObjectCursor;
@@ -187,5 +190,10 @@ public class ElasticsearchNodeClient implements ElasticsearchClient {
       ThreadContext.putAll(currentContext);
       task.run();
     };
+  }
+
+  @Override
+  public MLPredictionTaskResponse predict(MLPredictionTaskRequest request) {
+    return client.execute(MLPredictionTaskAction.INSTANCE, request).actionGet();
   }
 }

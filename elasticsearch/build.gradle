@@ -14,6 +14,7 @@ dependencies {
     compile "io.github.resilience4j:resilience4j-retry:1.5.0"
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.10.4'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.4'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.10.4'
     compile group: 'org.json', name: 'json', version:'20180813'
     compileOnly group: 'org.elasticsearch.client', name: 'elasticsearch-rest-high-level-client', version: "${es_version}"
 
@@ -35,41 +36,4 @@ test {
 jacoco {
     toolVersion = "0.8.5"
 }
-jacocoTestReport {
-    reports {
-        html.enabled true
-        xml.enabled true
-    }
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it)
-        }))
-    }
-}
-test.finalizedBy(project.tasks.jacocoTestReport)
 
-jacocoTestCoverageVerification {
-    violationRules {
-        rule {
-            element = 'CLASS'
-            excludes = [
-                    'com.amazon.opendistroforelasticsearch.sql.elasticsearch.security.SecurityAccess'
-            ]
-            limit {
-                counter = 'LINE'
-                minimum = 1.0
-            }
-            limit {
-                counter = 'BRANCH'
-                minimum = 1.0
-            }
-        }
-    }
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it)
-        }))
-    }
-}
-check.dependsOn jacocoTestCoverageVerification
-jacocoTestCoverageVerification.dependsOn jacocoTestReport

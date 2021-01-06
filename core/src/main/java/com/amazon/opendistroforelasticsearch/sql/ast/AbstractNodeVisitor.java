@@ -46,6 +46,7 @@ import com.amazon.opendistroforelasticsearch.sql.ast.tree.Eval;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Filter;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Head;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Limit;
+import com.amazon.opendistroforelasticsearch.sql.ast.tree.Predict;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Project;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.RareTopN;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Relation;
@@ -196,6 +197,10 @@ public abstract class AbstractNodeVisitor<T, C> {
   }
 
   public T visitHead(Head node, C context) {
+    return visitChildren(node, context);
+  }
+
+  public T visitPredict(Predict node, C context) {
     return visitChildren(node, context);
   }
 
