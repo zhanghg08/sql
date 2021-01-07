@@ -17,8 +17,8 @@
 package com.amazon.opendistroforelasticsearch.sql.elasticsearch.client;
 
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.mapping.IndexMapping;
-import com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.actions.MLPredictionTaskRequest;
-import com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.actions.MLPredictionTaskResponse;
+import com.odfe.es.ml.transport.shared.MLPredictionTaskRequest;
+import com.odfe.es.ml.transport.shared.MLPredictionTaskResponse;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.request.ElasticsearchRequest;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.response.ElasticsearchResponse;
 import java.util.List;

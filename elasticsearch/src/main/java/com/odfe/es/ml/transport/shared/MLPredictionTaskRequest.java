@@ -1,4 +1,4 @@
-package com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.actions;
+package com.odfe.es.ml.transport.shared;
 
 import java.io.IOException;
 import java.util.List;

@@ -1,10 +1,15 @@
-package com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.actions;
+package com.odfe.es.ml.transport.shared;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 
 import org.elasticsearch.action.ActionResponse;
+import org.elasticsearch.common.io.stream.InputStreamStreamInput;
+import org.elasticsearch.common.io.stream.OutputStreamStreamOutput;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 
@@ -47,5 +52,21 @@ public class MLPredictionTaskResponse  extends ActionResponse {
         out.writeString(taskId);
         out.writeString(status);
         out.writeString(JsonUtil.serialize(predictionResult));
+    }
+
+    public static MLPredictionTaskResponse fromActionResponse(ActionResponse actionResponse) {
+        if (actionResponse instanceof MLPredictionTaskResponse) {
+            return (MLPredictionTaskResponse) actionResponse;
+        }
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             OutputStreamStreamOutput osso = new OutputStreamStreamOutput(baos)) {
+            actionResponse.writeTo(osso);
+            try (StreamInput input = new InputStreamStreamInput(new ByteArrayInputStream(baos.toByteArray()))) {
+                return new MLPredictionTaskResponse(input);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("failed to parse ActionRequest into MLPredictionTaskRequest", e);
+        }
     }
 }
