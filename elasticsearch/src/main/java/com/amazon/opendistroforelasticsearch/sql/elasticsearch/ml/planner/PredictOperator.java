@@ -31,6 +31,8 @@ import com.amazon.opendistroforelasticsearch.sql.data.model.ExprLongValue;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprStringValue;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprTupleValue;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprValue;
+import com.amazon.opendistroforelasticsearch.sql.data.type.ExprCoreType;
+import com.amazon.opendistroforelasticsearch.sql.data.type.ExprType;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.client.ElasticsearchClient;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.JsonUtil;
 import com.odfe.es.ml.transport.shared.MLPredictionTaskRequest;
@@ -69,13 +71,17 @@ public class PredictOperator extends PhysicalPlan {
   public void open() {
     super.open();
     List<Map<String, Object>> inputDataFrame = new LinkedList<>();
+    Map<String, ExprType> fieldTypes = new HashMap<>();
     while (input.hasNext()) {
       Map<String, Object> items = new HashMap<>();
-      input.next().tupleValue().forEach((key, value) -> items.put(key, value.value()));
+      input.next().tupleValue().forEach((key, value) -> {
+        items.put(key, value.value());
+        fieldTypes.put(key, value.type());
+      });
       inputDataFrame.add(items);
     }
     Map<String, Object> argsMap = new HashMap<>();
-    for(String arg: args.split(";")) {
+    for(String arg: args.split(",")) {
       String[] splits = arg.split("=");
       String key = splits[0];
       String value = splits[1];
@@ -103,6 +109,13 @@ public class PredictOperator extends PhysicalPlan {
         } else if (value instanceof Long) {
           resultBuilder.put(entry.getKey(), new ExprLongValue((Long)value));
         } else if (value instanceof Double) {
+          //This is to fix the type inconsistency for arima algorithm
+          if(fieldTypes.containsKey(entry.getKey())) {
+            if (fieldTypes.get(entry.getKey()) == ExprCoreType.INTEGER) {
+              resultBuilder.put(entry.getKey(), new ExprIntegerValue(((Double)value).intValue()));
+              continue;
+            }
+          }
           resultBuilder.put(entry.getKey(), new ExprDoubleValue((Double)value));
         }  else if (value instanceof String) {
           resultBuilder.put(entry.getKey(), new ExprStringValue((String)value));
