@@ -76,7 +76,7 @@ public class PredictOperator extends PhysicalPlan {
     }
     Map<String, Object> argsMap = new HashMap<>();
     for(String arg: args.split(";")) {
-      String[] splits = arg.split(":");
+      String[] splits = arg.split("=");
       String key = splits[0];
       String value = splits[1];
 

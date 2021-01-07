@@ -48,6 +48,7 @@ import com.amazon.opendistroforelasticsearch.sql.ast.tree.Sort.SortOption;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.UnresolvedPlan;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Values;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprMissingValue;
+import com.amazon.opendistroforelasticsearch.sql.data.type.ExprCoreType;
 import com.amazon.opendistroforelasticsearch.sql.exception.SemanticCheckException;
 import com.amazon.opendistroforelasticsearch.sql.expression.DSL;
 import com.amazon.opendistroforelasticsearch.sql.expression.Expression;
@@ -378,6 +379,12 @@ public class Analyzer extends AbstractNodeVisitor<LogicalPlan, AnalysisContext> 
     String algo = (String)(options.get(0).getValue().getValue());
     String args = (String)(options.get(1).getValue().getValue());
 
+    if(algo.equalsIgnoreCase("rca")) {
+      context.push();
+      TypeEnvironment newEnv = context.peek();
+      newEnv.define(new Symbol(Namespace.FIELD_NAME,
+              "root_cause"), ExprCoreType.STRING);
+    }
     return new LogicalPredict(child, algo, args);
   }
 
