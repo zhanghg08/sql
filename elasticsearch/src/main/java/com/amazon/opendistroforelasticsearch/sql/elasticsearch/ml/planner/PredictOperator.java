@@ -15,12 +15,14 @@
 
 package com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.planner;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -90,7 +92,10 @@ public class PredictOperator extends PhysicalPlan {
         argsMap.put(key, Integer.valueOf(value));
       } else if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
         argsMap.put(key, Boolean.valueOf(value.toLowerCase()));
-      } else {
+      } else if(value.contains("-")) {
+        List<Integer> list = Arrays.stream(value.split("-")).map(Integer::parseInt).collect(Collectors.toList());
+        argsMap.put(key, list);
+      } else  {
         argsMap.put(key, value);
       }
     }
