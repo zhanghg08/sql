@@ -99,9 +99,18 @@ public class PredictOperator extends PhysicalPlan {
         argsMap.put(key, value);
       }
     }
+
+    String modelId = null;
+    if(argsMap.containsKey("modelId")) {
+        modelId = argsMap.get("modelId").toString();
+        argsMap.remove("modelId");
+    }
+
     MLPredictionTaskRequest request = MLPredictionTaskRequest.builder().algorithm(algo)
             .inputDataFrame(inputDataFrame)
-            .mlParameter(JsonUtil.serialize(argsMap)).build();
+            .mlParameter(JsonUtil.serialize(argsMap))
+            .modelId(modelId)
+            .build();
     List<Map<String, Object>>  predictionResult = this.elasticsearchClient.predict(request).getPredictionResult();
 
     iterator =  predictionResult.stream().map(result -> {

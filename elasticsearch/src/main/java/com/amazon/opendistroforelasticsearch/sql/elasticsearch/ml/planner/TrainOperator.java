@@ -106,7 +106,7 @@ public class TrainOperator extends PhysicalPlan {
 
     iterator =  Arrays.asList(taskId).stream().map(id -> {
       ImmutableMap.Builder<String, ExprValue> resultBuilder = new ImmutableMap.Builder<>();
-      resultBuilder.put("taskId", new ExprStringValue(id));
+      resultBuilder.put("jobId", new ExprStringValue(id));
       return (ExprValue) ExprTupleValue.fromExprValueMap(resultBuilder.build());
     } ).iterator();
   }
