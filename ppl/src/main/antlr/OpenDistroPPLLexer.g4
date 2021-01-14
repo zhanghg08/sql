@@ -32,6 +32,7 @@ HEAD:                               'HEAD';
 TOP:                                'TOP';
 RARE:                               'RARE';
 PREDICT:                            'PREDICT';
+TRAIN:                              'TRAIN';
 
 // COMMAND ASSIST KEYWORDS
 AS:                                 'AS';

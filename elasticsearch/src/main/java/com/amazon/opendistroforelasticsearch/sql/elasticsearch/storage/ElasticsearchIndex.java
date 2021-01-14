@@ -22,6 +22,7 @@ import com.amazon.opendistroforelasticsearch.sql.data.type.ExprType;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.client.ElasticsearchClient;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.data.value.ElasticsearchExprValueFactory;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.planner.PredictOperator;
+import com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.planner.TrainOperator;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.planner.logical.ElasticsearchLogicalIndexAgg;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.planner.logical.ElasticsearchLogicalIndexScan;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.planner.logical.ElasticsearchLogicalPlanOptimizerFactory;
@@ -34,6 +35,7 @@ import com.amazon.opendistroforelasticsearch.sql.planner.DefaultImplementor;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalPlan;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalPredict;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalRelation;
+import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalTrain;
 import com.amazon.opendistroforelasticsearch.sql.planner.physical.PhysicalPlan;
 import com.amazon.opendistroforelasticsearch.sql.storage.Table;
 import com.google.common.annotations.VisibleForTesting;
@@ -103,10 +105,15 @@ public class ElasticsearchIndex implements Table {
         return visitIndexAggregation((ElasticsearchLogicalIndexAgg) plan, context);
       } else if (plan instanceof LogicalPredict) {
         return visitPredict((LogicalPredict) plan, context);
+      } else if (plan instanceof LogicalTrain) {
+        return visitTrain((LogicalTrain) plan, context);
       } else {
         throw new IllegalStateException(StringUtils.format("unexpected plan node type %s",
             plan.getClass()));
       }
+    }
+    public PhysicalPlan visitTrain(LogicalTrain node, ElasticsearchIndexScan context) {
+      return new TrainOperator(visitChild(node, context), node.getAlgo(), node.getArgs(), client);
     }
 
     public PhysicalPlan visitPredict(LogicalPredict node, ElasticsearchIndexScan context) {

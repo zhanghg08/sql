@@ -48,6 +48,7 @@ import com.amazon.opendistroforelasticsearch.sql.ast.tree.RareTopN.CommandType;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Relation;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Rename;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Sort;
+import com.amazon.opendistroforelasticsearch.sql.ast.tree.Train;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.UnresolvedPlan;
 import com.amazon.opendistroforelasticsearch.sql.common.utils.StringUtils;
 import com.amazon.opendistroforelasticsearch.sql.ppl.antlr.parser.OpenDistroPPLParser;
@@ -187,6 +188,11 @@ public class AstBuilder extends OpenDistroPPLParserBaseVisitor<UnresolvedPlan> {
   @Override
   public UnresolvedPlan visitPredictCommand(OpenDistroPPLParser.PredictCommandContext ctx) {
     return new Predict(ArgumentFactory.getArgumentList(ctx));
+  }
+
+  @Override
+  public UnresolvedPlan visitTrainCommand(OpenDistroPPLParser.TrainCommandContext ctx) {
+    return new Train(ArgumentFactory.getArgumentList(ctx));
   }
   /**
    * Head command visitor.

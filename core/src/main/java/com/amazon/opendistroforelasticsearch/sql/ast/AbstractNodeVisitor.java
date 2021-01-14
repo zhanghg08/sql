@@ -53,6 +53,7 @@ import com.amazon.opendistroforelasticsearch.sql.ast.tree.Relation;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.RelationSubquery;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Rename;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Sort;
+import com.amazon.opendistroforelasticsearch.sql.ast.tree.Train;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Values;
 
 /**
@@ -201,6 +202,10 @@ public abstract class AbstractNodeVisitor<T, C> {
   }
 
   public T visitPredict(Predict node, C context) {
+    return visitChildren(node, context);
+  }
+
+  public T visitTrain(Train node, C context) {
     return visitChildren(node, context);
   }
 

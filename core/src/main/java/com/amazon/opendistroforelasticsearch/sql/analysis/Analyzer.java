@@ -45,6 +45,7 @@ import com.amazon.opendistroforelasticsearch.sql.ast.tree.RelationSubquery;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Rename;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Sort;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Sort.SortOption;
+import com.amazon.opendistroforelasticsearch.sql.ast.tree.Train;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.UnresolvedPlan;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Values;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprMissingValue;
@@ -71,6 +72,7 @@ import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalRelation
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalRemove;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalRename;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalSort;
+import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalTrain;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalValues;
 import com.amazon.opendistroforelasticsearch.sql.storage.StorageEngine;
 import com.amazon.opendistroforelasticsearch.sql.storage.Table;
@@ -387,6 +389,23 @@ public class Analyzer extends AbstractNodeVisitor<LogicalPlan, AnalysisContext> 
     }
     return new LogicalPredict(child, algo, args);
   }
+
+  @Override
+  public LogicalPlan visitTrain(Train node, AnalysisContext context) {
+    LogicalPlan child = node.getChild().get(0).accept(this, context);
+    List<Argument> options = node.getOptions();
+    String algo = (String)(options.get(0).getValue().getValue());
+    String args = (String)(options.get(1).getValue().getValue());
+
+
+    context.push();
+    TypeEnvironment newEnv = context.peek();
+    newEnv.define(new Symbol(Namespace.FIELD_NAME,
+            "jobId"), ExprCoreType.STRING);
+
+    return new LogicalTrain(child, algo, args);
+  }
+
 
   private static Literal getOptionAsLiteral(List<UnresolvedArgument> options, int optionIdx) {
     return (Literal) options.get(optionIdx).getValue();

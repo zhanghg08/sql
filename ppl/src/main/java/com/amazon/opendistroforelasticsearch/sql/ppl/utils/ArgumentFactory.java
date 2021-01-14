@@ -187,4 +187,12 @@ public class ArgumentFactory {
             : new Argument("args", new Literal("", DataType.STRING))
     );
   }
+
+  public static List<Argument> getArgumentList(OpenDistroPPLParser.TrainCommandContext ctx) {
+    return Arrays.asList(new Argument("algo", getArgumentValue(ctx.algo)),
+            ctx.args != null
+                    ? new Argument("args", getArgumentValue(ctx.args))
+                    : new Argument("args", new Literal("", DataType.STRING))
+    );
+  }
 }

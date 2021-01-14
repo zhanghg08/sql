@@ -25,6 +25,8 @@ import com.amazon.opendistroforelasticsearch.sql.elasticsearch.response.Elastics
 import com.carrotsearch.hppc.cursors.ObjectObjectCursor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.odfe.es.ml.transport.shared.MLTrainingTaskAction;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -195,5 +197,10 @@ public class ElasticsearchNodeClient implements ElasticsearchClient {
   @Override
   public MLPredictionTaskResponse predict(MLPredictionTaskRequest request) {
     return MLPredictionTaskResponse.fromActionResponse(client.execute(MLPredictionTaskAction.INSTANCE, request).actionGet());
+  }
+
+  @Override
+  public MLTrainingTaskAction.MLTrainingTaskResponse train(MLTrainingTaskAction.MLTrainingTaskRequest request) {
+    return MLTrainingTaskAction.MLTrainingTaskResponse.fromActionResponse(client.execute(MLTrainingTaskAction.INSTANCE, request).actionGet());
   }
 }
