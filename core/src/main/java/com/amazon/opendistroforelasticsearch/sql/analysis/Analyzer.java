@@ -37,6 +37,7 @@ import com.amazon.opendistroforelasticsearch.sql.ast.tree.Eval;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Filter;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Head;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Limit;
+import com.amazon.opendistroforelasticsearch.sql.ast.tree.Predict;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Project;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.RareTopN;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Relation;
@@ -44,9 +45,11 @@ import com.amazon.opendistroforelasticsearch.sql.ast.tree.RelationSubquery;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Rename;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Sort;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Sort.SortOption;
+import com.amazon.opendistroforelasticsearch.sql.ast.tree.Train;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.UnresolvedPlan;
 import com.amazon.opendistroforelasticsearch.sql.ast.tree.Values;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprMissingValue;
+import com.amazon.opendistroforelasticsearch.sql.data.type.ExprCoreType;
 import com.amazon.opendistroforelasticsearch.sql.exception.SemanticCheckException;
 import com.amazon.opendistroforelasticsearch.sql.expression.DSL;
 import com.amazon.opendistroforelasticsearch.sql.expression.Expression;
@@ -62,12 +65,14 @@ import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalFilter;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalHead;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalLimit;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalPlan;
+import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalPredict;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalProject;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalRareTopN;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalRelation;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalRemove;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalRename;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalSort;
+import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalTrain;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalValues;
 import com.amazon.opendistroforelasticsearch.sql.storage.StorageEngine;
 import com.amazon.opendistroforelasticsearch.sql.storage.Table;
@@ -369,6 +374,50 @@ public class Analyzer extends AbstractNodeVisitor<LogicalPlan, AnalysisContext> 
 
     return new LogicalHead(child, keeplast, whileExpr, number);
   }
+
+  public LogicalPlan visitPredict(Predict node, AnalysisContext context) {
+    LogicalPlan child = node.getChild().get(0).accept(this, context);
+    List<Argument> options = node.getOptions();
+    String algo = (String)(options.get(0).getValue().getValue());
+    String args = (String)(options.get(1).getValue().getValue());
+
+    if(args.contains("target")) {
+      for(String split: args.split(",")) {
+        if(split.trim().contains("target")) {
+          String[] targets = split.trim().split("=");
+          context.push();
+          TypeEnvironment newEnv = context.peek();
+          newEnv.define(new Symbol(Namespace.FIELD_NAME,
+                  targets[1]), ExprCoreType.STRING);
+        }
+      }
+    }
+
+    if(algo.equalsIgnoreCase("rca")) {
+      context.push();
+      TypeEnvironment newEnv = context.peek();
+      newEnv.define(new Symbol(Namespace.FIELD_NAME,
+              "root_cause"), ExprCoreType.STRING);
+    }
+    return new LogicalPredict(child, algo, args);
+  }
+
+  @Override
+  public LogicalPlan visitTrain(Train node, AnalysisContext context) {
+    LogicalPlan child = node.getChild().get(0).accept(this, context);
+    List<Argument> options = node.getOptions();
+    String algo = (String)(options.get(0).getValue().getValue());
+    String args = (String)(options.get(1).getValue().getValue());
+
+
+    context.push();
+    TypeEnvironment newEnv = context.peek();
+    newEnv.define(new Symbol(Namespace.FIELD_NAME,
+            "jobId"), ExprCoreType.STRING);
+
+    return new LogicalTrain(child, algo, args);
+  }
+
 
   private static Literal getOptionAsLiteral(List<UnresolvedArgument> options, int optionIdx) {
     return (Literal) options.get(optionIdx).getValue();

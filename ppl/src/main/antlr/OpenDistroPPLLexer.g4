@@ -31,6 +31,8 @@ EVAL:                               'EVAL';
 HEAD:                               'HEAD';
 TOP:                                'TOP';
 RARE:                               'RARE';
+PREDICT:                            'PREDICT';
+TRAIN:                              'TRAIN';
 
 // COMMAND ASSIST KEYWORDS
 AS:                                 'AS';
@@ -58,6 +60,9 @@ PARTITIONS:                         'PARTITIONS';
 ALLNUM:                             'ALLNUM';
 DELIM:                              'DELIM';
 WHILE:                              'WHILE';
+ALGO:                               'ALGO';
+ARGS:                               'ARGS';
+
 
 // COMPARISON FUNCTION KEYWORDS
 CASE:                               'CASE';

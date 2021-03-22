@@ -17,11 +17,16 @@
 package com.amazon.opendistroforelasticsearch.sql.elasticsearch.client;
 
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.mapping.IndexMapping;
+import com.odfe.es.ml.transport.shared.MLPredictionTaskAction;
+import com.odfe.es.ml.transport.shared.MLPredictionTaskRequest;
+import com.odfe.es.ml.transport.shared.MLPredictionTaskResponse;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.request.ElasticsearchRequest;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.response.ElasticsearchResponse;
 import com.carrotsearch.hppc.cursors.ObjectObjectCursor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.odfe.es.ml.transport.shared.MLTrainingTaskAction;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -187,5 +192,15 @@ public class ElasticsearchNodeClient implements ElasticsearchClient {
       ThreadContext.putAll(currentContext);
       task.run();
     };
+  }
+
+  @Override
+  public MLPredictionTaskResponse predict(MLPredictionTaskRequest request) {
+    return MLPredictionTaskResponse.fromActionResponse(client.execute(MLPredictionTaskAction.INSTANCE, request).actionGet());
+  }
+
+  @Override
+  public MLTrainingTaskAction.MLTrainingTaskResponse train(MLTrainingTaskAction.MLTrainingTaskRequest request) {
+    return MLTrainingTaskAction.MLTrainingTaskResponse.fromActionResponse(client.execute(MLTrainingTaskAction.INSTANCE, request).actionGet());
   }
 }
