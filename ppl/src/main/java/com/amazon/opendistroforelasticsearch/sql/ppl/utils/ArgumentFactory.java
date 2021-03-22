@@ -28,6 +28,8 @@ import com.amazon.opendistroforelasticsearch.sql.ast.expression.Argument;
 import com.amazon.opendistroforelasticsearch.sql.ast.expression.DataType;
 import com.amazon.opendistroforelasticsearch.sql.ast.expression.Literal;
 import com.amazon.opendistroforelasticsearch.sql.common.utils.StringUtils;
+import com.amazon.opendistroforelasticsearch.sql.ppl.antlr.parser.OpenDistroPPLParser;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -153,4 +155,19 @@ public class ArgumentFactory {
         : new Literal(StringUtils.unquoteText(ctx.getText()), DataType.STRING);
   }
 
+  public static List<Argument> getArgumentList(OpenDistroPPLParser.PredictCommandContext ctx) {
+    return Arrays.asList(new Argument("algo", getArgumentValue(ctx.algo)),
+        ctx.args != null
+            ? new Argument("args", getArgumentValue(ctx.args))
+            : new Argument("args", new Literal("", DataType.STRING))
+    );
+  }
+
+  public static List<Argument> getArgumentList(OpenDistroPPLParser.TrainCommandContext ctx) {
+    return Arrays.asList(new Argument("algo", getArgumentValue(ctx.algo)),
+            ctx.args != null
+                    ? new Argument("args", getArgumentValue(ctx.args))
+                    : new Argument("args", new Literal("", DataType.STRING))
+    );
+  }
 }

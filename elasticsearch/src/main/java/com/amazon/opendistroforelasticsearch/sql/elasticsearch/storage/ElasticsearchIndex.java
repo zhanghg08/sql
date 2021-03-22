@@ -21,6 +21,8 @@ import com.amazon.opendistroforelasticsearch.sql.common.utils.StringUtils;
 import com.amazon.opendistroforelasticsearch.sql.data.type.ExprType;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.client.ElasticsearchClient;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.data.value.ElasticsearchExprValueFactory;
+import com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.planner.PredictOperator;
+import com.amazon.opendistroforelasticsearch.sql.elasticsearch.ml.planner.TrainOperator;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.planner.logical.ElasticsearchLogicalIndexAgg;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.planner.logical.ElasticsearchLogicalIndexScan;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.planner.logical.ElasticsearchLogicalPlanOptimizerFactory;
@@ -31,7 +33,9 @@ import com.amazon.opendistroforelasticsearch.sql.elasticsearch.storage.script.so
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.storage.serialization.DefaultExpressionSerializer;
 import com.amazon.opendistroforelasticsearch.sql.planner.DefaultImplementor;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalPlan;
+import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalPredict;
 import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalRelation;
+import com.amazon.opendistroforelasticsearch.sql.planner.logical.LogicalTrain;
 import com.amazon.opendistroforelasticsearch.sql.planner.physical.PhysicalPlan;
 import com.amazon.opendistroforelasticsearch.sql.storage.Table;
 import com.google.common.annotations.VisibleForTesting;
@@ -85,7 +89,7 @@ public class ElasticsearchIndex implements Table {
      * aggregation, filter, will accumulate (push down) Elasticsearch query and aggregation DSL on
      * index scan.
      */
-    return plan.accept(new ElasticsearchDefaultImplementor(indexScan), indexScan);
+    return plan.accept(new ElasticsearchDefaultImplementor(indexScan, client), indexScan);
   }
 
   @Override
@@ -99,18 +103,30 @@ public class ElasticsearchIndex implements Table {
       extends DefaultImplementor<ElasticsearchIndexScan> {
     private final ElasticsearchIndexScan indexScan;
 
+    private final ElasticsearchClient client;
+
     @Override
     public PhysicalPlan visitNode(LogicalPlan plan, ElasticsearchIndexScan context) {
       if (plan instanceof ElasticsearchLogicalIndexScan) {
         return visitIndexScan((ElasticsearchLogicalIndexScan) plan, context);
       } else if (plan instanceof ElasticsearchLogicalIndexAgg) {
         return visitIndexAggregation((ElasticsearchLogicalIndexAgg) plan, context);
+      } else if (plan instanceof LogicalPredict) {
+        return visitPredict((LogicalPredict) plan, context);
+      } else if (plan instanceof LogicalTrain) {
+        return visitTrain((LogicalTrain) plan, context);
       } else {
         throw new IllegalStateException(StringUtils.format("unexpected plan node type %s",
             plan.getClass()));
       }
     }
+    public PhysicalPlan visitTrain(LogicalTrain node, ElasticsearchIndexScan context) {
+      return new TrainOperator(visitChild(node, context), node.getAlgo(), node.getArgs(), client);
+    }
 
+    public PhysicalPlan visitPredict(LogicalPredict node, ElasticsearchIndexScan context) {
+      return new PredictOperator(visitChild(node, context), node.getAlgo(), node.getArgs(), client);
+    }
     /**
      * Implement ElasticsearchLogicalIndexScan.
      */

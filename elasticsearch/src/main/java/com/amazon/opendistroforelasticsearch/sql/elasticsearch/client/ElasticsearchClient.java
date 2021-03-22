@@ -17,8 +17,12 @@
 package com.amazon.opendistroforelasticsearch.sql.elasticsearch.client;
 
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.mapping.IndexMapping;
+import com.odfe.es.ml.transport.shared.MLPredictionTaskRequest;
+import com.odfe.es.ml.transport.shared.MLPredictionTaskResponse;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.request.ElasticsearchRequest;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.response.ElasticsearchResponse;
+import com.odfe.es.ml.transport.shared.MLTrainingTaskAction;
+
 import java.util.List;
 import java.util.Map;
 
@@ -73,4 +77,12 @@ public interface ElasticsearchClient {
    * @param task task
    */
   void schedule(Runnable task);
+
+  default MLPredictionTaskResponse predict(MLPredictionTaskRequest request) {
+    throw new RuntimeException();
+  }
+
+  default MLTrainingTaskAction.MLTrainingTaskResponse train(MLTrainingTaskAction.MLTrainingTaskRequest request) {
+    throw new RuntimeException();
+  }
 }

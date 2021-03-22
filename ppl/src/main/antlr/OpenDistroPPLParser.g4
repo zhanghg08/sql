@@ -29,7 +29,7 @@ pplStatement
 /** commands */
 commands
     : whereCommand | fieldsCommand | renameCommand | statsCommand | dedupCommand | sortCommand | evalCommand | headCommand
-    | topCommand | rareCommand;
+    | topCommand | rareCommand | predictCommand | trainCommand;
 
 searchCommand
     : (SEARCH)? fromClause                                          #searchFrom
@@ -79,7 +79,18 @@ headCommand
     : HEAD
     (number=integerLiteral)?
     ;
-    
+
+predictCommand
+    : PREDICT
+    ALGO EQUAL algo=stringLiteral
+    (ARGS EQUAL args=stringLiteral)?
+    ;
+
+trainCommand
+    : TRAIN
+    ALGO EQUAL algo=stringLiteral
+    (ARGS EQUAL args=stringLiteral)?
+    ;
 topCommand
     : TOP
     (number=integerLiteral)?
