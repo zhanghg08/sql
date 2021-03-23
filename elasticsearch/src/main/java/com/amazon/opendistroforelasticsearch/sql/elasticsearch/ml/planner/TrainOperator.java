@@ -26,6 +26,11 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.amazon.opendistroforelasticsearch.ml.client.MachineLearningClient;
+import com.amazon.opendistroforelasticsearch.ml.common.dataframe.DataFrame;
+import com.amazon.opendistroforelasticsearch.ml.common.dataframe.DataFrameBuilder;
+import com.amazon.opendistroforelasticsearch.ml.common.parameter.Parameter;
+import com.amazon.opendistroforelasticsearch.ml.common.parameter.ParameterBuilder;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprDoubleValue;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprIntegerValue;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprLongValue;
@@ -56,23 +61,23 @@ public class TrainOperator extends PhysicalPlan {
   @Getter
   private final String args;
 
-  private final ElasticsearchClient elasticsearchClient;
+  private final MachineLearningClient machineLearningClient;
 
   @EqualsAndHashCode.Exclude
   private Iterator<ExprValue> iterator;
 
   @NonNull
-  public TrainOperator(PhysicalPlan input, String algo, String args, ElasticsearchClient elasticsearchClient) {
+  public TrainOperator(PhysicalPlan input, String algo, String args, MachineLearningClient machineLearningClient) {
     this.input = input;
     this.algo = algo;
     this.args = args;
-    this.elasticsearchClient = elasticsearchClient;
+    this.machineLearningClient = machineLearningClient;
   }
 
   @Override
   public void open() {
     super.open();
-    List<Map<String, Object>> inputDataFrame = new LinkedList<>();
+    List<Map<String, Object>> inputDataMapList = new LinkedList<>();
     Map<String, ExprType> fieldTypes = new HashMap<>();
     while (input.hasNext()) {
       Map<String, Object> items = new HashMap<>();
@@ -80,8 +85,10 @@ public class TrainOperator extends PhysicalPlan {
         items.put(key, value.value());
         fieldTypes.put(key, value.type());
       });
-      inputDataFrame.add(items);
+      inputDataMapList.add(items);
     }
+    DataFrame dataFrame = DataFrameBuilder.load(inputDataMapList);
+    List<Parameter> parameters = new LinkedList<>();
     Map<String, Object> argsMap = new HashMap<>();
     for(String arg: args.split(",")) {
       String[] splits = arg.split("=");
@@ -89,21 +96,18 @@ public class TrainOperator extends PhysicalPlan {
       String value = splits[1];
 
       if(StringUtils.isNumeric(splits[1])) {
-        argsMap.put(key, Integer.valueOf(value));
+        parameters.add(ParameterBuilder.parameter(key, Integer.parseInt(value)));
       } else if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
-        argsMap.put(key, Boolean.valueOf(value.toLowerCase()));
+        parameters.add(ParameterBuilder.parameter(key, Boolean.parseBoolean(value.toLowerCase())));
       } else if(value.contains("-")) {
-        List<Integer> list = Arrays.stream(value.split("-")).map(Integer::parseInt).collect(Collectors.toList());
-        argsMap.put(key, list);
+        int[] list = Arrays.stream(value.split("-")).map(Integer::parseInt).mapToInt(x->x).toArray();
+        parameters.add(ParameterBuilder.parameter(key, list));
       } else  {
-        argsMap.put(key, value);
+        parameters.add(ParameterBuilder.parameter(key, value));
       }
     }
-    MLTrainingTaskAction.MLTrainingTaskRequest request = MLTrainingTaskAction.MLTrainingTaskRequest.builder().algorithm(algo)
-            .inputDataFrame(inputDataFrame)
-            .mlParameter(JsonUtil.serialize(argsMap)).build();
-    String taskId = this.elasticsearchClient.train(request).getTaskId();
 
+    String taskId = "";
     iterator =  Arrays.asList(taskId).stream().map(id -> {
       ImmutableMap.Builder<String, ExprValue> resultBuilder = new ImmutableMap.Builder<>();
       resultBuilder.put("jobId", new ExprStringValue(id));

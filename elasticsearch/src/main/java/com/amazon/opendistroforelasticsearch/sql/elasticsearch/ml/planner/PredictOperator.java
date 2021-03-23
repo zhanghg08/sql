@@ -23,10 +23,19 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import com.amazon.opendistroforelasticsearch.ml.client.MachineLearningClient;
+import com.amazon.opendistroforelasticsearch.ml.common.dataframe.ColumnMeta;
+import com.amazon.opendistroforelasticsearch.ml.common.dataframe.ColumnValue;
+import com.amazon.opendistroforelasticsearch.ml.common.dataframe.DataFrame;
+import com.amazon.opendistroforelasticsearch.ml.common.dataframe.DataFrameBuilder;
+import com.amazon.opendistroforelasticsearch.ml.common.dataframe.Row;
+import com.amazon.opendistroforelasticsearch.ml.common.parameter.Parameter;
+import com.amazon.opendistroforelasticsearch.ml.common.parameter.ParameterBuilder;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprDoubleValue;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprIntegerValue;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprLongValue;
@@ -56,23 +65,23 @@ public class PredictOperator extends PhysicalPlan {
   @Getter
   private final String args;
 
-  private final ElasticsearchClient elasticsearchClient;
+  private final MachineLearningClient machineLearningClient;
 
   @EqualsAndHashCode.Exclude
   private Iterator<ExprValue> iterator;
 
   @NonNull
-  public PredictOperator(PhysicalPlan input, String algo, String args, ElasticsearchClient elasticsearchClient) {
+  public PredictOperator(PhysicalPlan input, String algo, String args, MachineLearningClient machineLearningClient) {
     this.input = input;
     this.algo = algo;
     this.args = args;
-    this.elasticsearchClient = elasticsearchClient;
+    this.machineLearningClient = machineLearningClient;
   }
 
   @Override
   public void open() {
     super.open();
-    List<Map<String, Object>> inputDataFrame = new LinkedList<>();
+    List<Map<String, Object>> inputDataMapList = new LinkedList<>();
     Map<String, ExprType> fieldTypes = new HashMap<>();
     while (input.hasNext()) {
       Map<String, Object> items = new HashMap<>();
@@ -80,59 +89,51 @@ public class PredictOperator extends PhysicalPlan {
         items.put(key, value.value());
         fieldTypes.put(key, value.type());
       });
-      inputDataFrame.add(items);
+      inputDataMapList.add(items);
     }
-    Map<String, Object> argsMap = new HashMap<>();
+
+    DataFrame dataFrame = DataFrameBuilder.load(inputDataMapList);
+    List<Parameter> parameters = new LinkedList<>();
+    String modelId = null;
     for(String arg: args.split(",")) {
       String[] splits = arg.split("=");
       String key = splits[0];
       String value = splits[1];
-
+      if(key.equalsIgnoreCase("modelId")) {
+        modelId = value;
+        continue;
+      }
       if(StringUtils.isNumeric(splits[1])) {
-        argsMap.put(key, Integer.valueOf(value));
+        parameters.add(ParameterBuilder.parameter(key, Integer.parseInt(value)));
       } else if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
-        argsMap.put(key, Boolean.valueOf(value.toLowerCase()));
+        parameters.add(ParameterBuilder.parameter(key, Boolean.parseBoolean(value.toLowerCase())));
       } else if(value.contains("-")) {
-        List<Integer> list = Arrays.stream(value.split("-")).map(Integer::parseInt).collect(Collectors.toList());
-        argsMap.put(key, list);
+        int[] list = Arrays.stream(value.split("-")).map(Integer::parseInt).mapToInt(x->x).toArray();
+        parameters.add(ParameterBuilder.parameter(key, list));
       } else  {
-        argsMap.put(key, value);
+        parameters.add(ParameterBuilder.parameter(key, value));
       }
     }
 
-    String modelId = null;
-    if(argsMap.containsKey("modelId")) {
-        modelId = argsMap.get("modelId").toString();
-        argsMap.remove("modelId");
-    }
+    DataFrame predictionResult = this.machineLearningClient.predict(algo, parameters, dataFrame, modelId);
+    ColumnMeta[] columnMetas = predictionResult.columnMetas();
 
-    MLPredictionTaskRequest request = MLPredictionTaskRequest.builder().algorithm(algo)
-            .inputDataFrame(inputDataFrame)
-            .mlParameter(JsonUtil.serialize(argsMap))
-            .modelId(modelId)
-            .build();
-    List<Map<String, Object>>  predictionResult = this.elasticsearchClient.predict(request).getPredictionResult();
-
-    iterator =  predictionResult.stream().map(result -> {
+    this.iterator = StreamSupport.stream(predictionResult.spliterator(), false).map(row -> {
       ImmutableMap.Builder<String, ExprValue> resultBuilder = new ImmutableMap.Builder<>();
 
-      for (Map.Entry<String, Object> entry : result.entrySet()) {
-        Object value = entry.getValue();
-        if( value instanceof Integer) {
-          resultBuilder.put(entry.getKey(), new ExprIntegerValue((Integer)value));
-        } else if (value instanceof Long) {
-          resultBuilder.put(entry.getKey(), new ExprLongValue((Long)value));
-        } else if (value instanceof Double) {
-          //This is to fix the type inconsistency for arima algorithm
-          if(fieldTypes.containsKey(entry.getKey())) {
-            if (fieldTypes.get(entry.getKey()) == ExprCoreType.INTEGER) {
-              resultBuilder.put(entry.getKey(), new ExprIntegerValue(((Double)value).intValue()));
-              continue;
-            }
-          }
-          resultBuilder.put(entry.getKey(), new ExprDoubleValue((Double)value));
-        }  else if (value instanceof String) {
-          resultBuilder.put(entry.getKey(), new ExprStringValue((String)value));
+      for (int i =0 ; i < columnMetas.length; i++) {
+        ColumnValue columnValue = row.getValue(i);
+        String keyName = columnMetas[i].getName();
+        switch(columnValue.columnType()){
+          case INTEGER:
+            resultBuilder.put(keyName, new ExprIntegerValue(columnValue.intValue()));
+            break;
+          case STRING:
+            resultBuilder.put(keyName, new ExprStringValue(columnValue.stringValue()));
+            break;
+          case DOUBLE:
+            resultBuilder.put(keyName, new ExprDoubleValue(columnValue.doubleValue()));
+            break;
         }
       }
       return (ExprValue) ExprTupleValue.fromExprValueMap(resultBuilder.build());

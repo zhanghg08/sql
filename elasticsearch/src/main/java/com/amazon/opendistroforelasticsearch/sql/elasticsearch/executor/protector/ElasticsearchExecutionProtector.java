@@ -108,7 +108,7 @@ public class ElasticsearchExecutionProtector extends ExecutionProtector {
     return new PredictOperator(visitInput(predictOperatorNode.getInput(), context),
             predictOperatorNode.getAlgo(),
             predictOperatorNode.getArgs(),
-            predictOperatorNode.getElasticsearchClient()
+            predictOperatorNode.getMachineLearningClient()
             );
   }
 
@@ -118,7 +118,7 @@ public class ElasticsearchExecutionProtector extends ExecutionProtector {
     return new TrainOperator(visitInput(trainOperatorNode.getInput(), context),
             trainOperatorNode.getAlgo(),
             trainOperatorNode.getArgs(),
-            trainOperatorNode.getElasticsearchClient()
+            trainOperatorNode.getMachineLearningClient()
     );
   }
 

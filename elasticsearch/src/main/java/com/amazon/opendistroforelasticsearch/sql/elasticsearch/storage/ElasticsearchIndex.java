@@ -121,11 +121,11 @@ public class ElasticsearchIndex implements Table {
       }
     }
     public PhysicalPlan visitTrain(LogicalTrain node, ElasticsearchIndexScan context) {
-      return new TrainOperator(visitChild(node, context), node.getAlgo(), node.getArgs(), client);
+      return new TrainOperator(visitChild(node, context), node.getAlgo(), node.getArgs(), client.machineLearningClient());
     }
 
     public PhysicalPlan visitPredict(LogicalPredict node, ElasticsearchIndexScan context) {
-      return new PredictOperator(visitChild(node, context), node.getAlgo(), node.getArgs(), client);
+      return new PredictOperator(visitChild(node, context), node.getAlgo(), node.getArgs(), client.machineLearningClient());
     }
     /**
      * Implement ElasticsearchLogicalIndexScan.

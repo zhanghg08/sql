@@ -16,6 +16,8 @@
 
 package com.amazon.opendistroforelasticsearch.sql.elasticsearch.client;
 
+import com.amazon.opendistroforelasticsearch.ml.client.MachineLearningClient;
+import com.amazon.opendistroforelasticsearch.ml.client.MachineLearningNodeClient;
 import com.amazon.opendistroforelasticsearch.sql.elasticsearch.mapping.IndexMapping;
 import com.odfe.es.ml.transport.shared.MLPredictionTaskAction;
 import com.odfe.es.ml.transport.shared.MLPredictionTaskRequest;
@@ -68,6 +70,8 @@ public class ElasticsearchNodeClient implements ElasticsearchClient {
   /** Index name expression resolver to get concrete index name. */
   private final IndexNameExpressionResolver resolver;
 
+  private final MachineLearningClient machineLearningClient;
+
   private static final String SQL_WORKER_THREAD_POOL_NAME = "sql-worker";
 
   /**
@@ -78,6 +82,7 @@ public class ElasticsearchNodeClient implements ElasticsearchClient {
     this.clusterService = clusterService;
     this.client = client;
     this.resolver = new IndexNameExpressionResolver(client.threadPool().getThreadContext());
+    this.machineLearningClient = new MachineLearningNodeClient(client);
   }
 
   /**
@@ -195,12 +200,8 @@ public class ElasticsearchNodeClient implements ElasticsearchClient {
   }
 
   @Override
-  public MLPredictionTaskResponse predict(MLPredictionTaskRequest request) {
-    return MLPredictionTaskResponse.fromActionResponse(client.execute(MLPredictionTaskAction.INSTANCE, request).actionGet());
+  public MachineLearningClient machineLearningClient() {
+    return new MachineLearningNodeClient(this.client);
   }
 
-  @Override
-  public MLTrainingTaskAction.MLTrainingTaskResponse train(MLTrainingTaskAction.MLTrainingTaskRequest request) {
-    return MLTrainingTaskAction.MLTrainingTaskResponse.fromActionResponse(client.execute(MLTrainingTaskAction.INSTANCE, request).actionGet());
-  }
 }
