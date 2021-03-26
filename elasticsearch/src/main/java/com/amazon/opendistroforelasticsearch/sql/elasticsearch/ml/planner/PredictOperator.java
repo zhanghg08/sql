@@ -36,6 +36,9 @@ import com.amazon.opendistroforelasticsearch.ml.common.dataframe.DataFrameBuilde
 import com.amazon.opendistroforelasticsearch.ml.common.dataframe.Row;
 import com.amazon.opendistroforelasticsearch.ml.common.parameter.Parameter;
 import com.amazon.opendistroforelasticsearch.ml.common.parameter.ParameterBuilder;
+import com.amazon.opendistroforelasticsearch.sql.analysis.TypeEnvironment;
+import com.amazon.opendistroforelasticsearch.sql.analysis.symbol.Namespace;
+import com.amazon.opendistroforelasticsearch.sql.analysis.symbol.Symbol;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprDoubleValue;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprIntegerValue;
 import com.amazon.opendistroforelasticsearch.sql.data.model.ExprLongValue;
@@ -118,21 +121,21 @@ public class PredictOperator extends PhysicalPlan {
     DataFrame predictionResult = this.machineLearningClient.predict(algo, parameters, dataFrame, modelId);
     ColumnMeta[] columnMetas = predictionResult.columnMetas();
 
+    String resultKeyName = getKeyName();
     this.iterator = StreamSupport.stream(predictionResult.spliterator(), false).map(row -> {
       ImmutableMap.Builder<String, ExprValue> resultBuilder = new ImmutableMap.Builder<>();
 
       for (int i =0 ; i < columnMetas.length; i++) {
         ColumnValue columnValue = row.getValue(i);
-        String keyName = columnMetas[i].getName();
         switch(columnValue.columnType()){
           case INTEGER:
-            resultBuilder.put(keyName, new ExprIntegerValue(columnValue.intValue()));
+            resultBuilder.put(resultKeyName, new ExprStringValue(String.valueOf(columnValue.intValue())));
             break;
           case STRING:
-            resultBuilder.put(keyName, new ExprStringValue(columnValue.stringValue()));
+            resultBuilder.put(resultKeyName, new ExprStringValue(columnValue.stringValue()));
             break;
           case DOUBLE:
-            resultBuilder.put(keyName, new ExprDoubleValue(columnValue.doubleValue()));
+            resultBuilder.put(resultKeyName, new ExprStringValue(String.valueOf(columnValue.doubleValue())));
             break;
         }
       }
@@ -140,6 +143,19 @@ public class PredictOperator extends PhysicalPlan {
     }).iterator();
   }
 
+  private String getKeyName() {
+    if(args.contains("target")) {
+      for(String split: args.split(",")) {
+        if(split.trim().contains("target")) {
+          String[] targets = split.trim().split("=");
+          return targets[1];
+        }
+      }
+    }
+
+    return "result";
+
+  }
   @Override
   public <R, C> R accept(PhysicalPlanNodeVisitor<R, C> visitor, C context) {
     return visitor.visitPredict(this, context);

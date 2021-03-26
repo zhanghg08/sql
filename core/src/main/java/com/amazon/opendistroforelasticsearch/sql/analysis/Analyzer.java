@@ -384,13 +384,11 @@ public class Analyzer extends AbstractNodeVisitor<LogicalPlan, AnalysisContext> 
                   targets[1]), ExprCoreType.STRING);
         }
       }
-    }
-
-    if(algo.equalsIgnoreCase("rca")) {
+    } else {
       context.push();
       TypeEnvironment newEnv = context.peek();
       newEnv.define(new Symbol(Namespace.FIELD_NAME,
-              "root_cause"), ExprCoreType.STRING);
+              "result"), ExprCoreType.STRING);
     }
     return new LogicalPredict(child, algo, args);
   }
