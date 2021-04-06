@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 import com.amazon.opendistroforelasticsearch.ml.client.MachineLearningClient;
+import com.amazon.opendistroforelasticsearch.ml.client.data.MachineLearningRequest;
 import com.amazon.opendistroforelasticsearch.ml.common.dataframe.DataFrame;
 import com.amazon.opendistroforelasticsearch.ml.common.dataframe.DataFrameBuilder;
 import com.amazon.opendistroforelasticsearch.ml.common.parameter.Parameter;
@@ -89,7 +90,6 @@ public class TrainOperator extends PhysicalPlan {
     }
     DataFrame dataFrame = DataFrameBuilder.load(inputDataMapList);
     List<Parameter> parameters = new LinkedList<>();
-    Map<String, Object> argsMap = new HashMap<>();
     for(String arg: args.split(",")) {
       String[] splits = arg.split("=");
       String key = splits[0];
@@ -107,7 +107,11 @@ public class TrainOperator extends PhysicalPlan {
       }
     }
 
-    String taskId = "";
+    String taskId = this.machineLearningClient.train(MachineLearningRequest.builder()
+            .algorithm(algo)
+            .parameters(parameters)
+            .inputData(dataFrame)
+            .build());
     iterator =  Arrays.asList(taskId).stream().map(id -> {
       ImmutableMap.Builder<String, ExprValue> resultBuilder = new ImmutableMap.Builder<>();
       resultBuilder.put("jobId", new ExprStringValue(id));
