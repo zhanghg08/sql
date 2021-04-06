@@ -121,21 +121,15 @@ public class PredictOperator extends PhysicalPlan {
     DataFrame predictionResult = this.machineLearningClient.predict(algo, parameters, dataFrame, modelId);
     ColumnMeta[] columnMetas = predictionResult.columnMetas();
 
-    String resultKeyName = getKeyName();
     this.iterator = StreamSupport.stream(predictionResult.spliterator(), false).map(row -> {
       ImmutableMap.Builder<String, ExprValue> resultBuilder = new ImmutableMap.Builder<>();
 
       for (int i =0 ; i < columnMetas.length; i++) {
         ColumnValue columnValue = row.getValue(i);
+        String resultKeyName = columnMetas[i].getName();
         switch(columnValue.columnType()){
-          case INTEGER:
-            resultBuilder.put(resultKeyName, new ExprStringValue(String.valueOf(columnValue.intValue())));
-            break;
-          case STRING:
-            resultBuilder.put(resultKeyName, new ExprStringValue(columnValue.stringValue()));
-            break;
           case DOUBLE:
-            resultBuilder.put(resultKeyName, new ExprStringValue(String.valueOf(columnValue.doubleValue())));
+            resultBuilder.put(resultKeyName, new ExprDoubleValue(columnValue.doubleValue()));
             break;
         }
       }

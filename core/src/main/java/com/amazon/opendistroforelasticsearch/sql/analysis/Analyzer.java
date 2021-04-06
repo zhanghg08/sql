@@ -378,17 +378,11 @@ public class Analyzer extends AbstractNodeVisitor<LogicalPlan, AnalysisContext> 
       for(String split: args.split(",")) {
         if(split.trim().contains("target")) {
           String[] targets = split.trim().split("=");
-          context.push();
           TypeEnvironment newEnv = context.peek();
           newEnv.define(new Symbol(Namespace.FIELD_NAME,
-                  targets[1]), ExprCoreType.STRING);
+                  targets[1]), ExprCoreType.DOUBLE);
         }
       }
-    } else {
-      context.push();
-      TypeEnvironment newEnv = context.peek();
-      newEnv.define(new Symbol(Namespace.FIELD_NAME,
-              "result"), ExprCoreType.STRING);
     }
     return new LogicalPredict(child, algo, args);
   }
@@ -399,7 +393,6 @@ public class Analyzer extends AbstractNodeVisitor<LogicalPlan, AnalysisContext> 
     List<Argument> options = node.getOptions();
     String algo = (String)(options.get(0).getValue().getValue());
     String args = (String)(options.get(1).getValue().getValue());
-
 
     context.push();
     TypeEnvironment newEnv = context.peek();
