@@ -98,44 +98,41 @@ public class PredictOperator extends PhysicalPlan {
     DataFrame dataFrame = DataFrameBuilder.load(inputDataMapList);
     List<Parameter> parameters = new LinkedList<>();
     String modelId = null;
-    for(String arg: args.split(",")) {
-      String[] splits = arg.split("=");
-      String key = splits[0];
-      String value = splits[1];
-      if(key.equalsIgnoreCase("modelId")) {
-        modelId = value;
-        continue;
-      }
-      if(StringUtils.isNumeric(splits[1])) {
-        parameters.add(ParameterBuilder.parameter(key, Integer.parseInt(value)));
-      } else if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
-        parameters.add(ParameterBuilder.parameter(key, Boolean.parseBoolean(value.toLowerCase())));
-      } else if(value.contains("-")) {
-        int[] list = Arrays.stream(value.split("-")).map(Integer::parseInt).mapToInt(x->x).toArray();
-        parameters.add(ParameterBuilder.parameter(key, list));
-      } else  {
-        parameters.add(ParameterBuilder.parameter(key, value));
+    if(args != null && !args.isEmpty()) {
+      for(String arg: args.split(",")) {
+        String[] splits = arg.split("=");
+        String key = splits[0];
+        String value = splits[1];
+        if(key.equalsIgnoreCase("modelId")) {
+          modelId = value;
+          continue;
+        }
+        if(StringUtils.isNumeric(splits[1])) {
+          parameters.add(ParameterBuilder.parameter(key, Integer.parseInt(value)));
+        } else if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+          parameters.add(ParameterBuilder.parameter(key, Boolean.parseBoolean(value.toLowerCase())));
+        } else if(value.contains("-")) {
+          int[] list = Arrays.stream(value.split("-")).map(Integer::parseInt).mapToInt(x->x).toArray();
+          parameters.add(ParameterBuilder.parameter(key, list));
+        } else  {
+          parameters.add(ParameterBuilder.parameter(key, value));
+        }
       }
     }
+
 
     DataFrame predictionResult = this.machineLearningClient.predict(algo, parameters, dataFrame, modelId);
     ColumnMeta[] columnMetas = predictionResult.columnMetas();
 
-    String resultKeyName = getKeyName();
     this.iterator = StreamSupport.stream(predictionResult.spliterator(), false).map(row -> {
       ImmutableMap.Builder<String, ExprValue> resultBuilder = new ImmutableMap.Builder<>();
 
       for (int i =0 ; i < columnMetas.length; i++) {
         ColumnValue columnValue = row.getValue(i);
+        String resultKeyName = columnMetas[i].getName();
         switch(columnValue.columnType()){
-          case INTEGER:
-            resultBuilder.put(resultKeyName, new ExprStringValue(String.valueOf(columnValue.intValue())));
-            break;
-          case STRING:
-            resultBuilder.put(resultKeyName, new ExprStringValue(columnValue.stringValue()));
-            break;
           case DOUBLE:
-            resultBuilder.put(resultKeyName, new ExprStringValue(String.valueOf(columnValue.doubleValue())));
+            resultBuilder.put(resultKeyName, new ExprDoubleValue(columnValue.doubleValue()));
             break;
         }
       }

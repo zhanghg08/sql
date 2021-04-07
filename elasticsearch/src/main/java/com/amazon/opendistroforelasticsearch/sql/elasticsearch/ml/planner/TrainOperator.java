@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 import com.amazon.opendistroforelasticsearch.ml.client.MachineLearningClient;
+import com.amazon.opendistroforelasticsearch.ml.client.data.MachineLearningRequest;
 import com.amazon.opendistroforelasticsearch.ml.common.dataframe.DataFrame;
 import com.amazon.opendistroforelasticsearch.ml.common.dataframe.DataFrameBuilder;
 import com.amazon.opendistroforelasticsearch.ml.common.parameter.Parameter;
@@ -89,25 +90,31 @@ public class TrainOperator extends PhysicalPlan {
     }
     DataFrame dataFrame = DataFrameBuilder.load(inputDataMapList);
     List<Parameter> parameters = new LinkedList<>();
-    Map<String, Object> argsMap = new HashMap<>();
-    for(String arg: args.split(",")) {
-      String[] splits = arg.split("=");
-      String key = splits[0];
-      String value = splits[1];
+    if(args != null && !args.isEmpty()) {
+      for(String arg: args.split(",")) {
+        String[] splits = arg.split("=");
+        String key = splits[0];
+        String value = splits[1];
 
-      if(StringUtils.isNumeric(splits[1])) {
-        parameters.add(ParameterBuilder.parameter(key, Integer.parseInt(value)));
-      } else if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
-        parameters.add(ParameterBuilder.parameter(key, Boolean.parseBoolean(value.toLowerCase())));
-      } else if(value.contains("-")) {
-        int[] list = Arrays.stream(value.split("-")).map(Integer::parseInt).mapToInt(x->x).toArray();
-        parameters.add(ParameterBuilder.parameter(key, list));
-      } else  {
-        parameters.add(ParameterBuilder.parameter(key, value));
+        if(StringUtils.isNumeric(splits[1])) {
+          parameters.add(ParameterBuilder.parameter(key, Integer.parseInt(value)));
+        } else if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+          parameters.add(ParameterBuilder.parameter(key, Boolean.parseBoolean(value.toLowerCase())));
+        } else if(value.contains("-")) {
+          int[] list = Arrays.stream(value.split("-")).map(Integer::parseInt).mapToInt(x->x).toArray();
+          parameters.add(ParameterBuilder.parameter(key, list));
+        } else  {
+          parameters.add(ParameterBuilder.parameter(key, value));
+        }
       }
     }
 
-    String taskId = "";
+
+    String taskId = this.machineLearningClient.train(MachineLearningRequest.builder()
+            .algorithm(algo)
+            .parameters(parameters)
+            .inputData(dataFrame)
+            .build());
     iterator =  Arrays.asList(taskId).stream().map(id -> {
       ImmutableMap.Builder<String, ExprValue> resultBuilder = new ImmutableMap.Builder<>();
       resultBuilder.put("jobId", new ExprStringValue(id));
